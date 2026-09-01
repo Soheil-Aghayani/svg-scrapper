@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="680" viewBox="0 0 1600 680" role="img" aria-labelledby="title description">
+  <title id="title">SVG Scrapper chrome icon workbench</title>
+  <desc id="description">A graphite and brushed-steel visual for the SVG Scrapper developer tool.</desc>
+  <defs>
+    <linearGradient id="chrome" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8fafc"/>
+      <stop offset="0.22" stop-color="#94a3b8"/>
+      <stop offset="0.48" stop-color="#334155"/>
+      <stop offset="0.72" stop-color="#e2e8f0"/>
+      <stop offset="1" stop-color="#64748b"/>
+    </linearGradient>
+    <linearGradient id="signal" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#bbf7d0"/>
+      <stop offset="0.52" stop-color="#22c55e"/>
+      <stop offset="1" stop-color="#15803d"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1b252d"/>
+      <stop offset="1" stop-color="#0b1015"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="0.8" cy="0.12" r="0.72">
+      <stop offset="0" stop-color="#22c55e" stop-opacity="0.2"/>
+      <stop offset="0.42" stop-color="#64748b" stop-opacity="0.09"/>
+      <stop offset="1" stop-color="#080b0f" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="44" height="44" patternUnits="userSpaceOnUse">
+      <path d="M44 0H0V44" fill="none" stroke="#cbd5e1" stroke-opacity="0.06"/>
+    </pattern>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="24" stdDeviation="24" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+    <filter id="soft-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="16"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="680" fill="#080b0f"/>
+  <rect width="1600" height="680" fill="url(#grid)"/>
+  <rect width="1600" height="680" fill="url(#halo)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="54" y="54" width="1492" height="572" rx="28" fill="url(#panel)" stroke="#64748b" stroke-opacity="0.45" stroke-width="2"/>
+    <rect x="55" y="55" width="1490" height="4" rx="2" fill="url(#chrome)" opacity="0.85"/>
+    <path d="M88 128H1512" stroke="#cbd5e1" stroke-opacity="0.12"/>
+
+    <circle cx="94" cy="93" r="7" fill="#64748b"/>
+    <circle cx="118" cy="93" r="7" fill="#94a3b8"/>
+    <circle cx="142" cy="93" r="7" fill="#22c55e"/>
+    <text x="180" y="99" fill="#a7b4c2" font-family="IBM Plex Sans, Arial, sans-serif" font-size="16" letter-spacing="3">SVG SCRAPPER / ICON WORKBENCH</text>
+
+    <g transform="translate(118 196)">
+      <text x="0" y="0" fill="#a7b4c2" font-family="Geist Mono, Consolas, monospace" font-size="17" letter-spacing="4">SEARCH / SHAPE / SHIP</text>
+      <text x="0" y="104" fill="url(#chrome)" font-family="IBM Plex Sans, Arial, sans-serif" font-size="104" font-weight="700" letter-spacing="-4">SVG</text>
+      <text x="2" y="186" fill="#f8fafc" font-family="IBM Plex Sans, Arial, sans-serif" font-size="70" font-weight="700" letter-spacing="10">SCRAPPER</text>
+      <rect x="4" y="224" width="292" height="5" rx="2.5" fill="url(#signal)"/>
+      <text x="0" y="274" fill="#a7b4c2" font-family="IBM Plex Sans, Arial, sans-serif" font-size="20">A sharper way to find the exact vector.</text>
+      <text x="0" y="318" fill="#718096" font-family="Geist Mono, Consolas, monospace" font-size="15" letter-spacing="2">ICONIFY CATALOG / SVG PATHS / ZIP EXPORT</text>
+    </g>
+
+    <g transform="translate(1000 170)">
+      <circle cx="224" cy="170" r="156" fill="#08110d" stroke="url(#chrome)" stroke-opacity="0.42" stroke-width="2"/>
+      <circle cx="224" cy="170" r="112" fill="none" stroke="#cbd5e1" stroke-opacity="0.18" stroke-width="1" stroke-dasharray="4 14"/>
+      <circle cx="224" cy="170" r="50" fill="none" stroke="url(#signal)" stroke-width="3"/>
+      <path d="M224 20V320M74 170H374M118 64L330 276M330 64L118 276" stroke="#cbd5e1" stroke-opacity="0.12"/>
+      <path d="M224 120C264 120 296 142 296 170C296 198 264 220 224 220C184 220 152 198 152 170C152 142 184 120 224 120Z" fill="none" stroke="url(#chrome)" stroke-width="5"/>
+      <path d="M224 138L245 170L224 202L203 170Z" fill="url(#signal)" fill-opacity="0.82"/>
+      <circle cx="224" cy="170" r="12" fill="#f8fafc"/>
+      <circle cx="224" cy="170" r="20" fill="none" stroke="#22c55e" stroke-opacity="0.26" stroke-width="12" filter="url(#soft-glow)"/>
+      <path d="M62 382H386" stroke="#cbd5e1" stroke-opacity="0.16"/>
+      <text x="62" y="420" fill="#86efac" font-family="Geist Mono, Consolas, monospace" font-size="16" letter-spacing="3">VECTOR SIGNAL ONLINE</text>
+    </g>
+  </g>
+</svg>

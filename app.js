@@ -129,7 +129,7 @@ function parseInput(inputVal) {
       'brands': 'logos',
       'programming': 'devicon',
       'material': 'mdi',
-      'weather': 'weather-icons',
+      'weather': 'wi',
       'cryptocurrency': 'cryptocurrency-color',
       'e-commerce': 'fluent',
       'arrows': 'lucide',
@@ -456,16 +456,13 @@ function handleSearchAndLoad() {
     return fetchCollection(parsed.prefix);
   }
 
-  // 2. If user typed a search query AND selected a specific collection:
+  // 2. If user typed a search query AND selected a specific collection pack:
   if (query && selectedPack) {
     return fetchSearchInCollection(query, selectedPack);
   }
 
-  // 3. If user typed a search query with NO collection selected:
+  // 3. If user typed a search query with NO collection selected (Global Search mode):
   if (query && !selectedPack) {
-    if (parsed.type === 'pack') {
-      return fetchCollection(parsed.prefix);
-    }
     return fetchSearchGlobal(query);
   }
 
@@ -608,16 +605,13 @@ function updateSelectedCount() {
 
 loadBtn.addEventListener('click', handleSearchAndLoad);
 
-// Selecting from preset dropdown NEVER populates urlInput with URL strings!
 presetSelect.addEventListener('change', () => {
   const selectedPack = presetSelect.value;
   const query = urlInput.value.trim();
 
-  // If user typed a search keyword and selected a pack -> search inside that pack!
   if (query && selectedPack) {
     fetchSearchInCollection(query, selectedPack);
   } else if (selectedPack) {
-    // Cleanly fetch 100% of the collection pack without modifying urlInput
     fetchCollection(selectedPack);
   } else if (query) {
     fetchSearchGlobal(query);

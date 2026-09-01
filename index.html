@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SVG Scrapper — Search, Extract &amp; Download SVG Icons</title>
+  <title>SVG Scrapper | Search, Extract &amp; Download SVG Icons</title>
   <meta name="description" content="Search 334k+ SVG icons across Iconify collections, preview and customize them, copy SVG path data, and download individual icons or ZIP bundles." />
   <meta name="keywords" content="SVG icon downloader, SVG path extractor, Iconify icons, allsvgicons, SVG scraper, icon collections, SVG ZIP download" />
   <meta name="author" content="Soheil Aghayani" />
@@ -15,15 +15,17 @@
 
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="SVG Scrapper" />
-  <meta property="og:title" content="SVG Scrapper — Search, Extract &amp; Download SVG Icons" />
+  <meta property="og:title" content="SVG Scrapper | Search, Extract &amp; Download SVG Icons" />
   <meta property="og:description" content="A fast browser toolkit for searching, customizing, extracting, and downloading SVG icons from popular collections." />
+  <meta property="og:url" content="https://soheil-aghayani.github.io/svg-scrapper/" />
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="SVG Scrapper — Search, Extract &amp; Download SVG Icons" />
+  <meta name="twitter:title" content="SVG Scrapper | Search, Extract &amp; Download SVG Icons" />
   <meta name="twitter:description" content="Search popular SVG icon collections, copy path data, and export customized icons or ZIP bundles." />
 
   <link rel="preconnect" href="https://api.iconify.design" />
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
+  <link rel="canonical" href="https://soheil-aghayani.github.io/svg-scrapper/" />
   <link rel="stylesheet" href="./style.css" />
 
   <script type="application/ld+json">
@@ -45,6 +47,8 @@
 </head>
 <body>
 
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
   <!-- Header -->
   <header class="navbar">
     <div class="brand">
@@ -63,10 +67,10 @@
   </header>
 
   <!-- Main Container -->
-  <main class="app-container">
+  <main id="main-content" class="app-container" tabindex="-1">
 
     <!-- Control Panel -->
-    <section class="control-panel">
+    <section class="control-panel" aria-label="Icon search and export controls">
       <div class="search-section">
         <div class="input-group">
           <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -77,16 +81,16 @@
             type="text" 
             id="urlInput" 
             class="url-input" 
-            placeholder="Search keyword (e.g. 'arrow', 'cloud') or paste allsvgicons.com URL"
+            placeholder="Search keyword (e.g. 'Starfield', 'arrow') or paste allsvgicons.com URL"
             aria-label="Search icons or paste URL"
           />
         </div>
 
         <select id="presetSelect" class="preset-select" title="Select Collection Filter" aria-label="Select Collection Filter">
-          <option value="">All 334k+ Icons (Global Search)</option>
+          <option value="" selected>All 334k+ Icons (Global Search)</option>
 
           <optgroup label="Popular Icon Sets">
-            <option value="lucide" selected>Lucide Icons (1,780)</option>
+            <option value="lucide">Lucide Icons (1,780)</option>
             <option value="solar">Solar Icons (7,608)</option>
             <option value="heroicons">Heroicons (1,288)</option>
             <option value="tabler">Tabler Icons (6,184)</option>
@@ -196,7 +200,7 @@
     </section>
 
     <!-- Status Bar -->
-    <div class="status-bar">
+    <div class="status-bar" role="status" aria-live="polite">
       <div id="statusText">Search icons or select a collection to start.</div>
       <div id="selectedCountText">Selected: 0 icons</div>
     </div>
@@ -207,7 +211,7 @@
   </main>
 
   <!-- Toast Container -->
-  <div id="toastContainer" class="toast-container"></div>
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
   <!-- Script Imports -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
