@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SVG Scrapper — Search, Extract &amp; Download SVG Icons</title>
+  <meta name="description" content="Search 334k+ SVG icons across Iconify collections, preview and customize them, copy SVG path data, and download individual icons or ZIP bundles." />
+  <meta name="keywords" content="SVG icon downloader, SVG path extractor, Iconify icons, allsvgicons, SVG scraper, icon collections, SVG ZIP download" />
+  <meta name="author" content="Soheil Aghayani" />
+  <meta name="application-name" content="SVG Scrapper" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="robots" content="index, follow" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="SVG Scrapper" />
+  <meta property="og:title" content="SVG Scrapper — Search, Extract &amp; Download SVG Icons" />
+  <meta property="og:description" content="A fast browser toolkit for searching, customizing, extracting, and downloading SVG icons from popular collections." />
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="SVG Scrapper — Search, Extract &amp; Download SVG Icons" />
+  <meta name="twitter:description" content="Search popular SVG icon collections, copy path data, and export customized icons or ZIP bundles." />
+
+  <link rel="preconnect" href="https://api.iconify.design" />
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
+  <link rel="stylesheet" href="./style.css" />
+
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "SVG Scrapper",
+      "description": "Search, preview, customize, extract, and batch-download SVG icons from Iconify collections and allsvgicons.com.",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Web Browser",
+      "isAccessibleForFree": true,
+      "author": {
+        "@type": "Person",
+        "name": "Soheil Aghayani",
+        "url": "https://github.com/Soheil-Aghayani"
+      }
+    }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="navbar">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+          <line x1="12" y1="22.08" x2="12" y2="12"></line>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1>SVG Scrapper</h1>
+        <p>Search, customize &amp; download 334k+ SVG icons from Iconify collections</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="app-container">
+
+    <!-- Control Panel -->
+    <section class="control-panel">
+      <div class="search-section">
+        <div class="input-group">
+          <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+          <input 
+            type="text" 
+            id="urlInput" 
+            class="url-input" 
+            placeholder="Search keyword (e.g. 'arrow', 'cloud') or paste allsvgicons.com URL"
+            aria-label="Search icons or paste URL"
+          />
+        </div>
+
+        <select id="presetSelect" class="preset-select" title="Select Collection Filter" aria-label="Select Collection Filter">
+          <option value="">All 334k+ Icons (Global Search)</option>
+
+          <optgroup label="Popular Icon Sets">
+            <option value="lucide" selected>Lucide Icons (1,780)</option>
+            <option value="solar">Solar Icons (7,608)</option>
+            <option value="heroicons">Heroicons (1,288)</option>
+            <option value="tabler">Tabler Icons (6,184)</option>
+            <option value="ph">Phosphor (9,072)</option>
+            <option value="ri">Remix Icon (3,188)</option>
+            <option value="hugeicons">Huge Icons (5,065)</option>
+            <option value="bi">Bootstrap Icons (2,078)</option>
+            <option value="mdi">Material Design Icons (7,447)</option>
+            <option value="material-symbols">Material Symbols (15,611)</option>
+            <option value="material-symbols-light">Material Symbols Light (15,676)</option>
+            <option value="ic">Google Material Icons (10,955)</option>
+            <option value="fluent">Fluent UI System (19,757)</option>
+            <option value="arcticons">Arcticons (15,057)</option>
+            <option value="reicon">Reicon (6,586)</option>
+            <option value="selfhst">selfh.st Icons (7,107)</option>
+            <option value="carbon">Carbon (2,590)</option>
+            <option value="flowbite">Flowbite Icons (751)</option>
+            <option value="wi">Weather Icons (219)</option>
+          </optgroup>
+
+          <optgroup label="Flags Collections">
+            <option value="circle-flags">Circle Flags (634)</option>
+            <option value="flag">Flag Icons (542)</option>
+            <option value="flagpack">Flagpack (254)</option>
+            <option value="cif">CoreUI Flags (199)</option>
+          </optgroup>
+
+          <optgroup label="Logos & Brands">
+            <option value="logos">SVG Logos (1,880)</option>
+            <option value="devicon">Devicon (1,036)</option>
+            <option value="devicon-plain">Devicon Plain (755)</option>
+            <option value="simple-icons">Simple Icons (3,453)</option>
+            <option value="skill-icons">Skill Icons (400)</option>
+            <option value="cib">CoreUI Brands (830)</option>
+            <option value="cbi">Custom Brand Icons (1,722)</option>
+            <option value="token-branded">Web3 Icons Branded (4,077)</option>
+          </optgroup>
+
+          <optgroup label="Emojis & Gaming">
+            <option value="openmoji">OpenMoji Emojis (4,544)</option>
+            <option value="twemoji">Twitter Emoji (3,988)</option>
+            <option value="noto">Noto Emoji (3,710)</option>
+            <option value="fluent-emoji">Fluent Emoji (3,126)</option>
+            <option value="fluent-emoji-flat">Fluent Emoji Flat (3,145)</option>
+            <option value="emojione">Emoji One Colored (1,834)</option>
+            <option value="game-icons">Game Icons (4,133)</option>
+          </optgroup>
+
+          <optgroup label="Font Awesome & Development">
+            <option value="fa6-solid">Font Awesome 6 Solid (1,402)</option>
+            <option value="fa6-brands">Font Awesome 6 Brands (495)</option>
+            <option value="fa7-solid">Font Awesome 7 Solid (2,000)</option>
+            <option value="fa7-brands">Font Awesome 7 Brands (608)</option>
+            <option value="boxicons">Boxicons (3,768)</option>
+            <option value="ion">IonIcons (1,357)</option>
+            <option value="octicon">Octicons (743)</option>
+            <option value="vscode-icons">VSCode Icons (1,580)</option>
+            <option value="uil">Unicons (1,215)</option>
+            <option value="catppuccin">Catppuccin Icons (656)</option>
+            <option value="cryptocurrency-color">Crypto Color Icons (483)</option>
+          </optgroup>
+        </select>
+
+        <button id="loadBtn" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+          Search / Load
+        </button>
+      </div>
+
+      <!-- Action Toolbar -->
+      <div class="toolbar">
+        <div class="toolbar-group">
+          <div class="filter-wrapper">
+            <svg class="filter-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            <input type="text" id="filterInput" class="filter-input" placeholder="Filter grid..." aria-label="Filter grid results" />
+          </div>
+
+          <label class="control-label">
+            Color:
+            <input type="color" id="colorPicker" class="color-input" value="#f3f4f6" title="Change SVG color" />
+          </label>
+
+          <label class="control-label">
+            Size:
+            <select id="sizeSelect" class="size-select" title="Change Icon Preview Size" aria-label="Change Icon Preview Size">
+              <option value="24">24px</option>
+              <option value="32" selected>32px</option>
+              <option value="48">48px</option>
+              <option value="64">64px</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="toolbar-group">
+          <button id="selectAllBtn" class="btn btn-secondary btn-sm">Select All</button>
+          <button id="deselectAllBtn" class="btn btn-secondary btn-sm">Deselect All</button>
+          <button id="copyPathsBtn" class="btn btn-secondary btn-sm" title="Copy <path d='...'> data">Copy Paths</button>
+          <button id="downloadZipBtn" class="btn btn-success btn-sm">Download ZIP</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <div id="statusText">Search icons or select a collection to start.</div>
+      <div id="selectedCountText">Selected: 0 icons</div>
+    </div>
+
+    <!-- Icon Grid -->
+    <section id="gridContainer" class="grid-container"></section>
+
+  </main>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Script Imports -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

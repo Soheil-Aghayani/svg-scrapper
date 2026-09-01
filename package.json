@@ -1,0 +1,27 @@
+{
+  "name": "svg-scrapper",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Search, preview, customize, extract, and batch-download SVG icons from Iconify collections and allsvgicons.com.",
+  "keywords": [
+    "svg",
+    "icons",
+    "iconify",
+    "svg-downloader",
+    "svg-scraper",
+    "path-extractor",
+    "vite"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "jszip": "^3.10.1"
+  },
+  "devDependencies": {
+    "vite": "^5.4.2"
+  }
+}
