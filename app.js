@@ -1,4 +1,3 @@
-// Minimal State
 const state = {
   packName: '',
   icons: [], // Array of { name, shortName, packPrefix, svgText, paths, selected: bool }
@@ -6,6 +5,7 @@ const state = {
   selectedCount: 0,
   currentColor: '#f3f4f6',
   currentSize: '32',
+  activeFormat: 'svg',
   isLoading: false,
 };
 
@@ -14,8 +14,14 @@ const urlInput = document.getElementById('urlInput');
 const presetSelect = document.getElementById('presetSelect');
 const loadBtn = document.getElementById('loadBtn');
 const filterInput = document.getElementById('filterInput');
-const colorPicker = document.getElementById('colorPicker');
+const colorPickerBtn = document.getElementById('colorPickerBtn');
+const colorPickerPopover = document.getElementById('colorPickerPopover');
+const colorSwatchPreview = document.getElementById('colorSwatchPreview');
+const colorHexText = document.getElementById('colorHexText');
+const customHexInput = document.getElementById('customHexInput');
+const swatchBtns = document.querySelectorAll('.swatch-btn');
 const sizeSelect = document.getElementById('sizeSelect');
+const formatSelect = document.getElementById('formatSelect');
 const selectAllBtn = document.getElementById('selectAllBtn');
 const deselectAllBtn = document.getElementById('deselectAllBtn');
 const copyPathsBtn = document.getElementById('copyPathsBtn');
@@ -24,6 +30,19 @@ const gridContainer = document.getElementById('gridContainer');
 const statusText = document.getElementById('statusText');
 const selectedCountText = document.getElementById('selectedCountText');
 const toastContainer = document.getElementById('toastContainer');
+
+// Modal DOM References
+const codeModalOverlay = document.getElementById('codeModalOverlay');
+const modalPreview = document.getElementById('modalPreview');
+const modalPackBadge = document.getElementById('modalPackBadge');
+const modalFormatBadge = document.getElementById('modalFormatBadge');
+const modalTitle = document.getElementById('modalTitle');
+const modalCloseBtn = document.getElementById('modalCloseBtn');
+const modalTabs = document.querySelectorAll('.modal-tab');
+const modalCodeLang = document.getElementById('modalCodeLang');
+const modalCodeContent = document.getElementById('modalCodeContent');
+const modalCopyBtn = document.getElementById('modalCopyBtn');
+const modalDownloadSvgBtn = document.getElementById('modalDownloadSvgBtn');
 
 // Toast Utility (Safely escapes text to prevent <svg> HTML tag rendering bugs)
 function showToast(message, type = 'info') {
@@ -52,6 +71,125 @@ function showToast(message, type = 'info') {
   }, 2200);
 }
 
+// Format Labels & Names
+const FORMAT_LABELS = {
+  svg: 'SVG',
+  react: 'React',
+  vue: 'Vue',
+  css: 'CSS',
+  tailwind: 'Tailwind'
+};
+
+const FORMAT_TITLES = {
+  react: 'React (JSX)',
+  vue: 'Vue 3 SFC',
+  css: 'CSS Data URI',
+  tailwind: 'Tailwind SVG',
+  svg: 'SVG markup',
+  path: 'Path data'
+};
+
+// Convert string to clean PascalCase component name
+function toPascalCase(str) {
+  if (!str) return 'Icon';
+  return str
+    .replace(/[:_.-]+(.)/g, (_, c) => c.toUpperCase())
+    .replace(/^[^a-zA-Z]/, 'Icon$&')
+    .replace(/^[a-z]/, c => c.toUpperCase())
+    .replace(/[^a-zA-Z0-9]/g, '');
+}
+
+// Transform SVG markup into React (JSX/TSX) component
+function svgToReactJsx(svgText, iconName = 'Icon') {
+  if (!svgText) return '';
+  const compName = toPascalCase(iconName);
+  let jsx = svgText
+    .replace(/class=/g, 'className=')
+    .replace(/stroke-width=/g, 'strokeWidth=')
+    .replace(/stroke-linecap=/g, 'strokeLinecap=')
+    .replace(/stroke-linejoin=/g, 'strokeLinejoin=')
+    .replace(/stroke-miterlimit=/g, 'strokeMiterlimit=')
+    .replace(/fill-rule=/g, 'fillRule=')
+    .replace(/clip-rule=/g, 'clipRule=')
+    .replace(/clip-path=/g, 'clipPath=')
+    .replace(/stop-color=/g, 'stopColor=')
+    .replace(/stop-opacity=/g, 'stopOpacity=')
+    .replace(/stroke-dasharray=/g, 'strokeDasharray=')
+    .replace(/stroke-dashoffset=/g, 'strokeDashoffset=')
+    .replace(/xmlns:xlink=/g, 'xmlnsXlink=')
+    .replace(/xlink:href=/g, 'xlinkHref=');
+
+  jsx = jsx.replace(/<svg\b([^>]*)>/i, '<svg$1 {...props}>');
+
+  return `export function ${compName}(props) {\n  return (\n    ${jsx.split('\n').join('\n    ')}\n  );\n}\n\nexport default ${compName};`;
+}
+
+// Transform SVG markup into Vue 3 Single File Component template
+function svgToVue(svgText) {
+  if (!svgText) return '';
+  const withAttrs = svgText.replace(/<svg\b([^>]*)>/i, '<svg$1 v-bind="$attrs">');
+  return `<template>\n  ${withAttrs}\n</template>`;
+}
+
+// Transform SVG markup into ready-to-use CSS Data URI
+function svgToCssDataUri(svgText) {
+  if (!svgText) return '';
+  const encoded = svgText
+    .replace(/[\n\r]+/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/"/g, "'")
+    .replace(/#/g, '%23')
+    .replace(/</g, '%3C')
+    .replace(/>/g, '%3E')
+    .replace(/&/g, '%26');
+  return `background-image: url("data:image/svg+xml,${encoded}");`;
+}
+
+// Inject standard Tailwind class configuration
+function svgToTailwind(svgText) {
+  if (!svgText) return '';
+  if (svgText.includes('class=')) {
+    return svgText.replace(/class="([^"]*)"/i, 'class="$1 w-6 h-6 text-current"');
+  }
+  return svgText.replace(/<svg\b([^>]*)>/i, '<svg$1 class="w-6 h-6 text-current">');
+}
+
+// Central code formatter
+function getFormattedCode(icon, format) {
+  if (!icon || !icon.svgText) return '';
+  const styledSvg = applySvgStyles(icon.svgText, state.currentColor, state.currentSize);
+  const name = icon.shortName || icon.name || 'icon';
+  switch (format) {
+    case 'react':
+      return svgToReactJsx(styledSvg, name);
+    case 'vue':
+      return svgToVue(styledSvg);
+    case 'css':
+      return svgToCssDataUri(styledSvg);
+    case 'tailwind':
+      return svgToTailwind(styledSvg);
+    case 'path':
+      return icon.paths && icon.paths.length > 0 ? icon.paths.join(' ') : '';
+    case 'svg':
+    default:
+      return styledSvg;
+  }
+}
+
+// Copy in specified or active format
+function copyFormattedCode(icon, format = state.activeFormat) {
+  if (!icon || !icon.svgText) return;
+  const code = getFormattedCode(icon, format);
+  if (!code) {
+    showToast('No code snippet available for this format', 'error');
+    return;
+  }
+  navigator.clipboard.writeText(code);
+  const name = icon.shortName || icon.name || 'icon';
+  const title = FORMAT_TITLES[format] || format.toUpperCase();
+  showToast(`Copied ${title} for '${name}'`, 'success');
+}
+
 // Copy Path string for a single icon
 function copyIconPath(icon) {
   const pathData = icon.paths.join(' ');
@@ -66,10 +204,7 @@ function copyIconPath(icon) {
 
 // Copy full SVG code for a single icon
 function copyIconSvgCode(icon) {
-  const styledSvg = applySvgStyles(icon.svgText, state.currentColor, state.currentSize);
-  navigator.clipboard.writeText(styledSvg);
-  const name = icon.shortName || icon.name || 'icon';
-  showToast(`Copied SVG code for '${name}'`, 'success');
+  copyFormattedCode(icon, state.activeFormat);
 }
 
 // Download a single SVG file directly to disk
@@ -499,32 +634,52 @@ function renderGrid() {
     card.dataset.index = idx;
 
     const styledSvg = applySvgStyles(icon.svgText, state.currentColor, state.currentSize);
-    const packTag = icon.packPrefix || state.packName || '';
-    const badgeMarkup = packTag ? `<div class="icon-card-badge" title="Collection: ${packTag}">${packTag}</div>` : '';
+    const isGlobalSearch = state.packName.startsWith('Search:') || state.packName.startsWith('Global');
+    const badgeMarkup = (isGlobalSearch && icon.packPrefix) 
+      ? `<div class="icon-card-badge" title="Collection: ${icon.packPrefix}">${icon.packPrefix}</div>` 
+      : '';
 
     card.innerHTML = `
       ${badgeMarkup}
-      <div class="icon-card-check">
+      <div class="icon-card-check" title="Toggle selection">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
           <polyline points="20 6 9 17 4 12"></polyline>
         </svg>
       </div>
+      <div class="card-corner-actions">
+        <button class="card-action-btn inspect-btn" title="Inspect & Code Formats" type="button">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 18 22 12 16 6"></polyline>
+            <polyline points="8 6 2 12 8 18"></polyline>
+          </svg>
+        </button>
+        <button class="card-action-btn download-btn" title="Save .svg directly" type="button">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+        </button>
+      </div>
       <div class="icon-preview">${styledSvg}</div>
       <div class="icon-name" title="${icon.shortName || icon.name}">${icon.shortName || icon.name}</div>
-      <div class="icon-actions">
-        <button class="mini-btn copy-path-btn" title="Copy path (d=...)">Path</button>
-        <button class="mini-btn copy-svg-btn" title="Copy <path> SVG">SVG</button>
-        <button class="mini-btn download-btn" title="Save .svg file">Save</button>
+      <div class="card-copied-indicator">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        <span>Copied!</span>
       </div>
     `;
 
-    // Click card body to instantly copy path (d=...)
+    // Click anywhere on card body to 1-Click Copy in active format!
     card.addEventListener('click', (e) => {
-      if (e.target.classList.contains('mini-btn') || e.target.closest('.icon-card-check')) return;
-      copyIconPath(icon);
+      if (e.target.closest('.card-action-btn') || e.target.closest('.icon-card-check')) return;
+      copyFormattedCode(icon, state.activeFormat);
+      card.classList.add('just-copied');
+      setTimeout(() => card.classList.remove('just-copied'), 650);
     });
 
-    // Toggle checkbox when clicking checkbox
+    // Checkbox toggle
     const checkBtn = card.querySelector('.icon-card-check');
     checkBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -533,21 +688,14 @@ function renderGrid() {
       updateSelectedCount();
     });
 
-    // 1-Click Copy Path Button
-    const copyPathBtn = card.querySelector('.copy-path-btn');
-    copyPathBtn.addEventListener('click', (e) => {
+    // Inspect & Code modal trigger
+    const inspectBtn = card.querySelector('.inspect-btn');
+    inspectBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      copyIconPath(icon);
+      openCodeModal(icon);
     });
 
-    // 1-Click Copy SVG Code Button
-    const copySvgBtn = card.querySelector('.copy-svg-btn');
-    copySvgBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      copyIconSvgCode(icon);
-    });
-
-    // 1-Click Save SVG File Button
+    // Download SVG trigger
     const downloadBtn = card.querySelector('.download-btn');
     downloadBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -637,14 +785,181 @@ filterInput.addEventListener('input', () => {
   renderGrid();
 });
 
-colorPicker.addEventListener('input', (e) => {
-  state.currentColor = e.target.value;
+// Custom Color Picker Controller
+function setColor(color) {
+  if (!color) return;
+  let cleanColor = color.trim();
+  if (cleanColor !== 'currentColor' && !cleanColor.startsWith('#') && /^[0-9a-fA-F]{3,6}$/.test(cleanColor)) {
+    cleanColor = '#' + cleanColor;
+  }
+  state.currentColor = cleanColor;
+  if (colorSwatchPreview) {
+    colorSwatchPreview.style.backgroundColor = cleanColor === 'currentColor' ? '#ffffff' : cleanColor;
+  }
+  if (colorHexText) {
+    colorHexText.textContent = cleanColor.toLowerCase();
+  }
+  
+  swatchBtns.forEach(btn => {
+    const match = btn.dataset.color.toLowerCase() === cleanColor.toLowerCase();
+    btn.classList.toggle('active', match);
+  });
   renderGrid();
+}
+
+function toggleColorPopover(show) {
+  if (!colorPickerPopover) return;
+  const isOpen = show !== undefined ? show : !colorPickerPopover.classList.contains('open');
+  colorPickerPopover.classList.toggle('open', isOpen);
+  colorPickerBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  if (isOpen && customHexInput) {
+    customHexInput.value = state.currentColor.replace('#', '');
+  }
+}
+
+function closeColorPopover() {
+  toggleColorPopover(false);
+}
+
+if (colorPickerBtn) {
+  colorPickerBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleColorPopover();
+  });
+}
+
+swatchBtns.forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    setColor(btn.dataset.color);
+    closeColorPopover();
+  });
+});
+
+if (customHexInput) {
+  customHexInput.addEventListener('input', (e) => {
+    const val = e.target.value.trim();
+    if (/^#?[0-9a-fA-F]{3}$|^#?[0-9a-fA-F]{6}$/.test(val)) {
+      setColor(val);
+    }
+  });
+
+  customHexInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      closeColorPopover();
+    }
+  });
+}
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.color-picker-wrapper')) {
+    closeColorPopover();
+  }
 });
 
 sizeSelect.addEventListener('change', (e) => {
   state.currentSize = e.target.value;
   renderGrid();
+});
+
+// Format selector change listener
+formatSelect.addEventListener('change', (e) => {
+  state.activeFormat = e.target.value;
+  const title = FORMAT_TITLES[state.activeFormat] || state.activeFormat.toUpperCase();
+  showToast(`Active copy format: ${title}`, 'info');
+});
+
+// Modal State & Handlers
+let activeModalIcon = null;
+let activeModalTab = 'react';
+
+function openCodeModal(icon) {
+  if (!icon) return;
+  activeModalIcon = icon;
+
+  const styledSvg = applySvgStyles(icon.svgText, state.currentColor, '32');
+  modalPreview.innerHTML = styledSvg;
+  modalTitle.textContent = icon.shortName || icon.name || 'Icon';
+  modalPackBadge.textContent = (icon.packPrefix || state.packName || 'ICON').toUpperCase();
+
+  if (['react', 'vue', 'css', 'tailwind', 'svg'].includes(state.activeFormat)) {
+    activeModalTab = state.activeFormat;
+  } else {
+    activeModalTab = 'react';
+  }
+
+  updateModalTabUI();
+  codeModalOverlay.classList.add('open');
+  codeModalOverlay.setAttribute('aria-hidden', 'false');
+}
+
+function closeCodeModal() {
+  codeModalOverlay.classList.remove('open');
+  codeModalOverlay.setAttribute('aria-hidden', 'true');
+  activeModalIcon = null;
+}
+
+function updateModalTabUI() {
+  modalTabs.forEach(tab => {
+    const isCurrent = tab.dataset.tab === activeModalTab;
+    tab.classList.toggle('active', isCurrent);
+    tab.setAttribute('aria-selected', isCurrent ? 'true' : 'false');
+  });
+
+  const titles = {
+    react: 'JSX / TSX Component',
+    vue: 'Vue 3 Single File Component',
+    css: 'CSS background-image rule',
+    tailwind: 'Tailwind utility class SVG',
+    svg: 'Raw SVG markup',
+    path: 'SVG Path (d="..." string)'
+  };
+  modalCodeLang.textContent = titles[activeModalTab] || activeModalTab.toUpperCase();
+  modalFormatBadge.textContent = FORMAT_TITLES[activeModalTab] || activeModalTab.toUpperCase();
+
+  if (activeModalIcon) {
+    const code = getFormattedCode(activeModalIcon, activeModalTab);
+    modalCodeContent.textContent = code;
+  }
+}
+
+modalCloseBtn.addEventListener('click', closeCodeModal);
+
+codeModalOverlay.addEventListener('click', (e) => {
+  if (e.target === codeModalOverlay) closeCodeModal();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && codeModalOverlay.classList.contains('open')) {
+    closeCodeModal();
+  }
+});
+
+modalTabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    activeModalTab = tab.dataset.tab;
+    updateModalTabUI();
+  });
+});
+
+modalCopyBtn.addEventListener('click', () => {
+  if (!activeModalIcon) return;
+  copyFormattedCode(activeModalIcon, activeModalTab);
+  const span = modalCopyBtn.querySelector('span');
+  if (span) {
+    const oldText = span.textContent;
+    span.textContent = 'Copied!';
+    setTimeout(() => { span.textContent = oldText; }, 1500);
+  }
+});
+
+modalCodeContent.parentElement.addEventListener('click', () => {
+  if (!activeModalIcon) return;
+  copyFormattedCode(activeModalIcon, activeModalTab);
+});
+
+modalDownloadSvgBtn.addEventListener('click', () => {
+  if (activeModalIcon) downloadSingleSvg(activeModalIcon);
 });
 
 selectAllBtn.addEventListener('click', () => {
