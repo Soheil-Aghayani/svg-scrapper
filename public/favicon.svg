@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#0f1c2a"/>
+      <stop offset="100%" stop-color="#080d14"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="glow-strong">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <clipPath id="rounded">
+      <rect width="100" height="100" rx="22" ry="22"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background -->
+  <rect width="100" height="100" rx="22" ry="22" fill="url(#bg)"/>
+
+  <!-- Subtle SVG path curves -->
+  <g clip-path="url(#rounded)" opacity="0.22" stroke="#06b6d4" stroke-width="1.2" fill="none">
+    <path d="M15,78 C30,65 45,85 60,72 S80,55 90,68"/>
+    <path d="M10,88 C25,70 50,90 70,75 S88,60 95,72"/>
+    <circle cx="25" cy="80" r="3" stroke-width="1"/>
+    <circle cx="60" cy="72" r="2.5" stroke-width="1"/>
+    <circle cx="80" cy="65" r="2" stroke-width="1"/>
+    <rect x="57" y="69.5" width="5" height="5" stroke-width="1"/>
+    <rect x="18" y="77" width="4" height="4" stroke-width="1"/>
+  </g>
+
+  <!-- Left bracket < -->
+  <g filter="url(#glow)" fill="#10b981">
+    <polygon points="24,28 13,50 24,72 31,72 20,50 31,28"/>
+  </g>
+
+  <!-- Right bracket > -->
+  <g filter="url(#glow)" fill="#10b981">
+    <polygon points="76,28 87,50 76,72 69,72 80,50 69,28"/>
+  </g>
+
+  <!-- Lightning bolt -->
+  <g filter="url(#glow-strong)" fill="#10b981">
+    <polygon points="54,15 40,52 50,52 46,85 63,45 52,45"/>
+  </g>
+</svg>
