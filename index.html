@@ -241,6 +241,14 @@
             </svg>
             <span>Deselect All</span>
           </button>
+          <button id="addSelectedToBasketBtn" class="btn btn-secondary btn-sm" title="Add selected icons to Project Basket">
+            <svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
+              <path d="M3 6h18"></path>
+              <path d="M16 10a4 4 0 0 1-8 0"></path>
+            </svg>
+            <span>+ Basket</span>
+          </button>
           <button id="copyPathsBtn" class="btn btn-secondary btn-sm" title="Copy <path d='...'> data for all or selected icons">
             <svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -270,6 +278,128 @@
     <section id="gridContainer" class="grid-container"></section>
 
   </main>
+
+  <!-- Floating Project Basket Tray -->
+  <aside id="projectBasketTray" class="basket-tray" aria-label="Project Basket">
+    <div class="basket-tray-bar">
+      <div class="basket-summary" id="basketToggleBtn" role="button" tabindex="0" aria-expanded="true" title="Toggle Basket Drawer">
+        <div class="basket-icon-indicator">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
+            <path d="M3 6h18"></path>
+            <path d="M16 10a4 4 0 0 1-8 0"></path>
+          </svg>
+          <span id="basketBadgeCount" class="basket-badge-count">0</span>
+        </div>
+        <div class="basket-title-group">
+          <span class="basket-title">Project Basket</span>
+          <span id="basketSubtitle" class="basket-subtitle">0 icons collected</span>
+        </div>
+        <button class="basket-collapse-btn" id="basketChevronBtn" aria-label="Collapse Basket" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+      </div>
+
+      <div class="basket-actions">
+        <button id="basketExportBtn" class="btn btn-primary btn-sm" title="Export as React / Vue / Sprite component bundle">
+          <svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 18 22 12 16 6"></polyline>
+            <polyline points="8 6 2 12 8 18"></polyline>
+          </svg>
+          <span>Export Bundle</span>
+        </button>
+        <button id="basketZipBtn" class="btn btn-success btn-sm" title="Download ZIP of basket icons">
+          <svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Download ZIP</span>
+        </button>
+        <button id="basketClearBtn" class="btn btn-secondary btn-sm" title="Clear all icons from basket">
+          <svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+          <span>Clear</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="basketItemsStrip" class="basket-items-strip">
+      <!-- Icon Chips rendered dynamically -->
+    </div>
+  </aside>
+
+  <!-- Multi-Icon Bundle Exporter Modal -->
+  <div id="basketModalOverlay" class="modal-overlay" aria-hidden="true">
+    <div class="modal-card modal-card-large" role="dialog" aria-modal="true" aria-labelledby="basketModalTitle">
+      <div class="modal-header">
+        <div class="modal-icon-badge">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
+            <path d="M3 6h18"></path>
+            <path d="M16 10a4 4 0 0 1-8 0"></path>
+          </svg>
+        </div>
+        <div class="modal-title-group">
+          <div class="modal-badge-row">
+            <span id="basketModalCountBadge" class="modal-pack-badge">0 ICONS</span>
+            <span class="modal-format-badge" id="basketModalFormatBadge">React (TSX)</span>
+          </div>
+          <h2 id="basketModalTitle" class="modal-title">Multi-Icon Component Bundle</h2>
+        </div>
+        <button id="basketModalCloseBtn" class="modal-close-btn" aria-label="Close modal" title="Close (Esc)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Framework Tabs -->
+      <div class="modal-tabs" role="tablist">
+        <button class="modal-tab active" data-tab="react-tsx" role="tab" aria-selected="true">React (TSX)</button>
+        <button class="modal-tab" data-tab="react-jsx" role="tab" aria-selected="false">React (JSX)</button>
+        <button class="modal-tab" data-tab="vue" role="tab" aria-selected="false">Vue 3</button>
+        <button class="modal-tab" data-tab="sprite" role="tab" aria-selected="false">SVG Sprite</button>
+        <button class="modal-tab" data-tab="json" role="tab" aria-selected="false">JSON Paths</button>
+      </div>
+
+      <!-- Code Viewport -->
+      <div class="modal-code-wrapper">
+        <div class="modal-code-toolbar">
+          <span id="basketCodeLang" class="modal-code-lang">Icons.tsx (TypeScript)</span>
+          <div class="modal-code-actions">
+            <button id="basketCopyCodeBtn" class="btn btn-primary btn-sm">
+              <svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span>Copy Bundle</span>
+            </button>
+            <button id="basketDownloadFileBtn" class="btn btn-secondary btn-sm" title="Save bundle file to disk">
+              <svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>Download File</span>
+            </button>
+          </div>
+        </div>
+        <pre class="modal-code-block modal-code-block-tall"><code id="basketCodeContent"></code></pre>
+      </div>
+
+      <div class="modal-footer">
+        <div class="modal-footer-hint">
+          <span>Ready to paste into your components folder or download as a standalone file • Press <kbd>Esc</kbd> to exit</span>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Code Inspector Modal -->
   <div id="codeModalOverlay" class="modal-overlay" aria-hidden="true">

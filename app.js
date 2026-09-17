@@ -3,6 +3,7 @@ const state = {
   icons: [], // Array of { name, shortName, packPrefix, svgText, paths, selected: bool }
   filteredIcons: [],
   selectedCount: 0,
+  basket: [], // Array of { id, name, shortName, packPrefix, svgText, paths }
   currentColor: '#f3f4f6',
   currentSize: '32',
   activeFormat: 'svg',
@@ -24,6 +25,7 @@ const sizeSelect = document.getElementById('sizeSelect');
 const formatSelect = document.getElementById('formatSelect');
 const selectAllBtn = document.getElementById('selectAllBtn');
 const deselectAllBtn = document.getElementById('deselectAllBtn');
+const addSelectedToBasketBtn = document.getElementById('addSelectedToBasketBtn');
 const copyPathsBtn = document.getElementById('copyPathsBtn');
 const downloadZipBtn = document.getElementById('downloadZipBtn');
 const gridContainer = document.getElementById('gridContainer');
@@ -38,11 +40,34 @@ const modalPackBadge = document.getElementById('modalPackBadge');
 const modalFormatBadge = document.getElementById('modalFormatBadge');
 const modalTitle = document.getElementById('modalTitle');
 const modalCloseBtn = document.getElementById('modalCloseBtn');
-const modalTabs = document.querySelectorAll('.modal-tab');
+const modalTabs = document.querySelectorAll('#codeModalOverlay .modal-tab');
 const modalCodeLang = document.getElementById('modalCodeLang');
 const modalCodeContent = document.getElementById('modalCodeContent');
 const modalCopyBtn = document.getElementById('modalCopyBtn');
 const modalDownloadSvgBtn = document.getElementById('modalDownloadSvgBtn');
+
+// Project Basket Tray DOM References
+const projectBasketTray = document.getElementById('projectBasketTray');
+const basketToggleBtn = document.getElementById('basketToggleBtn');
+const basketBadgeCount = document.getElementById('basketBadgeCount');
+const basketSubtitle = document.getElementById('basketSubtitle');
+const basketChevronBtn = document.getElementById('basketChevronBtn');
+const basketExportBtn = document.getElementById('basketExportBtn');
+const basketZipBtn = document.getElementById('basketZipBtn');
+const basketClearBtn = document.getElementById('basketClearBtn');
+const basketItemsStrip = document.getElementById('basketItemsStrip');
+
+// Basket Modal DOM References
+const basketModalOverlay = document.getElementById('basketModalOverlay');
+const basketModalCountBadge = document.getElementById('basketModalCountBadge');
+const basketModalFormatBadge = document.getElementById('basketModalFormatBadge');
+const basketModalTitle = document.getElementById('basketModalTitle');
+const basketModalCloseBtn = document.getElementById('basketModalCloseBtn');
+const basketModalTabs = document.querySelectorAll('#basketModalOverlay .modal-tab');
+const basketCodeLang = document.getElementById('basketCodeLang');
+const basketCodeContent = document.getElementById('basketCodeContent');
+const basketCopyCodeBtn = document.getElementById('basketCopyCodeBtn');
+const basketDownloadFileBtn = document.getElementById('basketDownloadFileBtn');
 
 // Toast Utility (Safely escapes text to prevent <svg> HTML tag rendering bugs)
 function showToast(message, type = 'info') {
@@ -639,6 +664,8 @@ function renderGrid() {
       ? `<div class="icon-card-badge" title="Collection: ${icon.packPrefix}">${icon.packPrefix}</div>` 
       : '';
 
+    const inBasket = isIconInBasket(icon);
+
     card.innerHTML = `
       ${badgeMarkup}
       <div class="icon-card-check" title="Toggle selection">
@@ -647,6 +674,13 @@ function renderGrid() {
         </svg>
       </div>
       <div class="card-corner-actions">
+        <button class="card-action-btn basket-btn ${inBasket ? 'in-basket' : ''}" title="${inBasket ? 'Remove from Basket' : 'Add to Basket'}" type="button">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="${inBasket ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
+            <path d="M3 6h18"></path>
+            <path d="M16 10a4 4 0 0 1-8 0"></path>
+          </svg>
+        </button>
         <button class="card-action-btn inspect-btn" title="Inspect & Code Formats" type="button">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="16 18 22 12 16 6"></polyline>
@@ -686,6 +720,13 @@ function renderGrid() {
       icon.selected = !icon.selected;
       card.classList.toggle('selected', icon.selected);
       updateSelectedCount();
+    });
+
+    // Basket toggle trigger
+    const basketBtn = card.querySelector('.basket-btn');
+    basketBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleBasket(icon);
     });
 
     // Inspect & Code modal trigger
@@ -930,8 +971,13 @@ codeModalOverlay.addEventListener('click', (e) => {
 });
 
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && codeModalOverlay.classList.contains('open')) {
-    closeCodeModal();
+  if (e.key === 'Escape') {
+    if (codeModalOverlay && codeModalOverlay.classList.contains('open')) {
+      closeCodeModal();
+    }
+    if (basketModalOverlay && basketModalOverlay.classList.contains('open')) {
+      closeBasketModal();
+    }
   }
 });
 
@@ -961,6 +1007,505 @@ modalCodeContent.parentElement.addEventListener('click', () => {
 modalDownloadSvgBtn.addEventListener('click', () => {
   if (activeModalIcon) downloadSingleSvg(activeModalIcon);
 });
+
+// ==========================================================================
+// Project Basket & Multi-Icon Component Bundle System
+// ==========================================================================
+
+const BASKET_STORAGE_KEY = 'svg_scrapper_basket_v1';
+
+function getIconId(icon) {
+  if (!icon) return '';
+  const prefix = icon.packPrefix || state.packName || '';
+  const name = icon.name || icon.shortName || '';
+  return prefix ? `${prefix}:${name}` : name;
+}
+
+function loadBasketFromStorage() {
+  try {
+    const raw = localStorage.getItem(BASKET_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        state.basket = parsed;
+      }
+    }
+  } catch (err) {
+    console.warn('Could not load basket from localStorage:', err);
+    state.basket = [];
+  }
+  renderBasketTray();
+}
+
+function saveBasketToStorage() {
+  try {
+    localStorage.setItem(BASKET_STORAGE_KEY, JSON.stringify(state.basket));
+  } catch (err) {
+    console.warn('Could not save basket to localStorage:', err);
+  }
+}
+
+function isIconInBasket(icon) {
+  if (!icon) return false;
+  const id = getIconId(icon);
+  return state.basket.some(item => item.id === id);
+}
+
+function addToBasket(icon) {
+  if (!icon || !icon.svgText) return;
+  const id = getIconId(icon);
+  if (state.basket.some(b => b.id === id)) {
+    showToast(`'${icon.shortName || icon.name}' is already in Project Basket`, 'info');
+    return;
+  }
+  state.basket.push({
+    id,
+    name: icon.name || icon.shortName,
+    shortName: icon.shortName || icon.name,
+    packPrefix: icon.packPrefix || state.packName,
+    svgText: icon.svgText,
+    paths: icon.paths || []
+  });
+  saveBasketToStorage();
+  renderBasketTray();
+  updateCardBasketStates();
+  showToast(`Added '${icon.shortName || icon.name}' to Project Basket`, 'success');
+}
+
+function removeFromBasket(iconId) {
+  const prevCount = state.basket.length;
+  state.basket = state.basket.filter(item => item.id !== iconId);
+  if (state.basket.length < prevCount) {
+    saveBasketToStorage();
+    renderBasketTray();
+    updateCardBasketStates();
+  }
+}
+
+function toggleBasket(icon) {
+  if (!icon) return;
+  const id = getIconId(icon);
+  if (isIconInBasket(icon)) {
+    removeFromBasket(id);
+    showToast(`Removed '${icon.shortName || icon.name}' from basket`, 'info');
+  } else {
+    addToBasket(icon);
+  }
+}
+
+function addSelectedToBasket() {
+  const selected = state.icons.filter(i => i.selected);
+  if (selected.length === 0) {
+    showToast('No icons currently selected. Check icons or click Select All.', 'error');
+    return;
+  }
+
+  let addedCount = 0;
+  selected.forEach(icon => {
+    const id = getIconId(icon);
+    if (!state.basket.some(b => b.id === id)) {
+      state.basket.push({
+        id,
+        name: icon.name || icon.shortName,
+        shortName: icon.shortName || icon.name,
+        packPrefix: icon.packPrefix || state.packName,
+        svgText: icon.svgText,
+        paths: icon.paths || []
+      });
+      addedCount++;
+    }
+  });
+
+  saveBasketToStorage();
+  renderBasketTray();
+  updateCardBasketStates();
+
+  if (addedCount > 0) {
+    showToast(`Added ${addedCount} icon${addedCount === 1 ? '' : 's'} to Project Basket!`, 'success');
+  } else {
+    showToast('Selected icons are already in Project Basket', 'info');
+  }
+}
+
+function clearBasket() {
+  if (state.basket.length === 0) return;
+  state.basket = [];
+  saveBasketToStorage();
+  renderBasketTray();
+  updateCardBasketStates();
+  showToast('Cleared Project Basket', 'info');
+}
+
+function updateCardBasketStates() {
+  if (!gridContainer) return;
+  const cards = gridContainer.querySelectorAll('.icon-card');
+  cards.forEach(card => {
+    const idx = parseInt(card.dataset.index, 10);
+    const icon = state.filteredIcons[idx];
+    if (icon) {
+      const inBasket = isIconInBasket(icon);
+      const basketBtn = card.querySelector('.basket-btn');
+      if (basketBtn) {
+        basketBtn.classList.toggle('in-basket', inBasket);
+        basketBtn.setAttribute('title', inBasket ? 'Remove from Basket' : 'Add to Basket');
+        const svg = basketBtn.querySelector('svg');
+        if (svg) {
+          svg.setAttribute('fill', inBasket ? 'currentColor' : 'none');
+        }
+      }
+    }
+  });
+}
+
+function renderBasketTray() {
+  if (!projectBasketTray) return;
+  const count = state.basket.length;
+
+  if (count === 0) {
+    projectBasketTray.classList.add('empty');
+    if (basketBadgeCount) basketBadgeCount.textContent = '0';
+    if (basketSubtitle) basketSubtitle.textContent = '0 icons collected';
+    if (basketItemsStrip) basketItemsStrip.innerHTML = '';
+    return;
+  }
+
+  projectBasketTray.classList.remove('empty');
+  if (basketBadgeCount) basketBadgeCount.textContent = count;
+  if (basketSubtitle) basketSubtitle.textContent = `${count} icon${count === 1 ? '' : 's'} collected`;
+
+  if (basketItemsStrip) {
+    basketItemsStrip.innerHTML = '';
+    const frag = document.createDocumentFragment();
+
+    state.basket.forEach(item => {
+      const chip = document.createElement('div');
+      chip.className = 'basket-chip';
+      chip.title = `${item.packPrefix ? item.packPrefix + ':' : ''}${item.name}`;
+
+      const miniSvg = applySvgStyles(item.svgText, state.currentColor, '18');
+
+      chip.innerHTML = `
+        <div class="basket-chip-thumb">${miniSvg}</div>
+        <span class="basket-chip-name">${item.shortName || item.name}</span>
+        <button class="basket-chip-remove" type="button" title="Remove from basket">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      `;
+
+      const removeBtn = chip.querySelector('.basket-chip-remove');
+      removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        removeFromBasket(item.id);
+        showToast(`Removed '${item.shortName || item.name}' from basket`, 'info');
+      });
+
+      frag.appendChild(chip);
+    });
+
+    basketItemsStrip.appendChild(frag);
+  }
+}
+
+// Basket Tray Collapse / Expand Toggle
+if (basketToggleBtn) {
+  basketToggleBtn.addEventListener('click', () => {
+    projectBasketTray.classList.toggle('collapsed');
+  });
+}
+
+// Bundle Generators
+function generateReactBundle(basketIcons, isTypeScript = true) {
+  if (!basketIcons || basketIcons.length === 0) return '// Project Basket is empty';
+
+  const usedNames = new Set();
+  const components = basketIcons.map(icon => {
+    let name = toPascalCase(icon.shortName || icon.name);
+    let uniqueName = name;
+    let counter = 2;
+    while (usedNames.has(uniqueName)) {
+      uniqueName = `${name}${counter++}`;
+    }
+    usedNames.add(uniqueName);
+
+    const vbMatch = (icon.svgText || '').match(/viewBox="([^"]*)"/i);
+    const viewBox = vbMatch ? vbMatch[1] : '0 0 24 24';
+
+    let inner = (icon.svgText || '')
+      .replace(/<svg\b[^>]*>/i, '')
+      .replace(/<\/svg>/i, '')
+      .trim()
+      .replace(/class=/g, 'className=')
+      .replace(/stroke-width=/g, 'strokeWidth=')
+      .replace(/stroke-linecap=/g, 'strokeLinecap=')
+      .replace(/stroke-linejoin=/g, 'strokeLinejoin=')
+      .replace(/stroke-miterlimit=/g, 'strokeMiterlimit=')
+      .replace(/fill-rule=/g, 'fillRule=')
+      .replace(/clip-rule=/g, 'clipRule=')
+      .replace(/clip-path=/g, 'clipPath=')
+      .replace(/stop-color=/g, 'stopColor=')
+      .replace(/stop-opacity=/g, 'stopOpacity=')
+      .replace(/stroke-dasharray=/g, 'strokeDasharray=')
+      .replace(/stroke-dashoffset=/g, 'strokeDashoffset=');
+
+    const typeDef = isTypeScript ? '(props: IconProps)' : '(props)';
+    const code = `export function ${uniqueName}${typeDef} {\n  const { size = 24, width, height, ...rest } = props;\n  return (\n    <svg\n      viewBox="${viewBox}"\n      width={width || size}\n      height={height || size}\n      fill="none"\n      stroke="currentColor"\n      strokeWidth={2}\n      strokeLinecap="round"\n      strokeLinejoin="round"\n      {...rest}\n    >\n      ${inner}\n    </svg>\n  );\n}`;
+
+    return { name: uniqueName, code };
+  });
+
+  const header = isTypeScript
+    ? `// SVG Scrapper - Project Icons Bundle (${basketIcons.length} icons)\nimport React from 'react';\n\nexport interface IconProps extends React.SVGProps<SVGSVGElement> {\n  size?: number | string;\n}\n\n`
+    : `// SVG Scrapper - Project Icons Bundle (${basketIcons.length} icons)\nimport React from 'react';\n\n`;
+
+  const compBody = components.map(c => c.code).join('\n\n');
+  const exportAll = `\n\nexport const Icons = {\n${components.map(c => `  ${c.name},`).join('\n')}\n};\n\nexport default Icons;\n`;
+
+  return header + compBody + exportAll;
+}
+
+function generateVueBundle(basketIcons) {
+  if (!basketIcons || basketIcons.length === 0) return '// Project Basket is empty';
+  const usedNames = new Set();
+  const components = basketIcons.map(icon => {
+    let name = toPascalCase(icon.shortName || icon.name);
+    let uniqueName = name;
+    let counter = 2;
+    while (usedNames.has(uniqueName)) {
+      uniqueName = `${name}${counter++}`;
+    }
+    usedNames.add(uniqueName);
+
+    const styledSvg = applySvgStyles(icon.svgText, 'currentColor', '24');
+    return {
+      name: uniqueName,
+      code: `export const ${uniqueName} = {\n  name: '${uniqueName}',\n  props: {\n    size: { type: [Number, String], default: 24 }\n  },\n  render() {\n    return h('span', {\n      class: 'svg-icon',\n      style: { display: 'inline-flex', width: this.size + 'px', height: this.size + 'px' },\n      innerHTML: \`${styledSvg}\`\n    });\n  }\n};`
+    };
+  });
+
+  const header = `// SVG Scrapper - Vue 3 Icon Bundle (${basketIcons.length} icons)\nimport { h } from 'vue';\n\n`;
+  const compBody = components.map(c => c.code).join('\n\n');
+  const exportAll = `\n\nexport const Icons = {\n${components.map(c => `  ${c.name},`).join('\n')}\n};\n\nexport default Icons;\n`;
+
+  return header + compBody + exportAll;
+}
+
+function generateSvgSprite(basketIcons) {
+  if (!basketIcons || basketIcons.length === 0) return '<!-- Project Basket is empty -->';
+  const symbols = basketIcons.map(icon => {
+    const cleanId = (icon.shortName || icon.name).replace(/[^a-zA-Z0-9_-]/g, '-').toLowerCase();
+    const id = `icon-${cleanId}`;
+    const vbMatch = (icon.svgText || '').match(/viewBox="([^"]*)"/i);
+    const viewBox = vbMatch ? vbMatch[1] : '0 0 24 24';
+    const inner = (icon.svgText || '')
+      .replace(/<svg\b[^>]*>/i, '')
+      .replace(/<\/svg>/i, '')
+      .trim();
+    return `    <symbol id="${id}" viewBox="${viewBox}">\n      ${inner}\n    </symbol>`;
+  }).join('\n');
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">\n  <defs>\n${symbols}\n  </defs>\n</svg>`;
+}
+
+function generateJsonPaths(basketIcons) {
+  const mapping = {};
+  basketIcons.forEach(icon => {
+    const key = icon.shortName || icon.name;
+    mapping[key] = icon.paths && icon.paths.length > 0 ? icon.paths.join(' ') : '';
+  });
+  return JSON.stringify(mapping, null, 2);
+}
+
+function downloadFile(filename, content, mimeType = 'text/plain;charset=utf-8') {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast(`Downloaded ${filename}`, 'success');
+}
+
+async function downloadBasketZip() {
+  if (state.basket.length === 0) {
+    showToast('Project Basket is empty', 'error');
+    return;
+  }
+  const zipClass = window.JSZip || (typeof JSZip !== 'undefined' ? JSZip : null);
+  if (!zipClass) {
+    showToast('JSZip library not available', 'error');
+    return;
+  }
+  showToast(`Packaging ${state.basket.length} basket icons into ZIP...`, 'info');
+  const zip = new zipClass();
+  const folder = zip.folder('project-icons');
+  state.basket.forEach(icon => {
+    const styledSvg = applySvgStyles(icon.svgText, state.currentColor, state.currentSize);
+    let fileName = (icon.shortName || icon.name || 'icon').replace(/[^a-zA-Z0-9_-]/g, '_');
+    if (!fileName.endsWith('.svg')) fileName += '.svg';
+    folder.file(fileName, styledSvg);
+  });
+  const content = await zip.generateAsync({ type: 'blob' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(content);
+  a.download = 'project_icons_bundle.zip';
+  a.click();
+  showToast(`Downloaded ZIP with ${state.basket.length} icons!`, 'success');
+}
+
+// Basket Modal Controller
+let activeBasketTab = 'react-tsx';
+
+function openBasketModal() {
+  if (state.basket.length === 0) {
+    showToast('Project Basket is empty! Add icons using the + button on cards.', 'error');
+    return;
+  }
+
+  if (basketModalCountBadge) {
+    basketModalCountBadge.textContent = `${state.basket.length} ICONS`;
+  }
+
+  updateBasketModalUI();
+  basketModalOverlay.classList.add('open');
+  basketModalOverlay.setAttribute('aria-hidden', 'false');
+}
+
+function closeBasketModal() {
+  basketModalOverlay.classList.remove('open');
+  basketModalOverlay.setAttribute('aria-hidden', 'true');
+}
+
+function getBasketBundleContent(tab) {
+  switch (tab) {
+    case 'react-tsx':
+      return generateReactBundle(state.basket, true);
+    case 'react-jsx':
+      return generateReactBundle(state.basket, false);
+    case 'vue':
+      return generateVueBundle(state.basket);
+    case 'sprite':
+      return generateSvgSprite(state.basket);
+    case 'json':
+      return generateJsonPaths(state.basket);
+    default:
+      return '';
+  }
+}
+
+function getBasketFileInfo(tab) {
+  switch (tab) {
+    case 'react-tsx':
+      return { filename: 'Icons.tsx', mime: 'text/typescript' };
+    case 'react-jsx':
+      return { filename: 'Icons.jsx', mime: 'text/javascript' };
+    case 'vue':
+      return { filename: 'icons.js', mime: 'text/javascript' };
+    case 'sprite':
+      return { filename: 'sprite.svg', mime: 'image/svg+xml' };
+    case 'json':
+      return { filename: 'icons.json', mime: 'application/json' };
+    default:
+      return { filename: 'icons.txt', mime: 'text/plain' };
+  }
+}
+
+function updateBasketModalUI() {
+  basketModalTabs.forEach(tab => {
+    const isCurrent = tab.dataset.tab === activeBasketTab;
+    tab.classList.toggle('active', isCurrent);
+    tab.setAttribute('aria-selected', isCurrent ? 'true' : 'false');
+  });
+
+  const titles = {
+    'react-tsx': 'Icons.tsx (TypeScript Component Bundle)',
+    'react-jsx': 'Icons.jsx (React Component Bundle)',
+    'vue': 'icons.js (Vue 3 Components)',
+    'sprite': 'sprite.svg (SVG Sprite Sheet)',
+    'json': 'icons.json (JSON Path Data)'
+  };
+  const badges = {
+    'react-tsx': 'React (TSX)',
+    'react-jsx': 'React (JSX)',
+    'vue': 'Vue 3',
+    'sprite': 'SVG Sprite',
+    'json': 'JSON Paths'
+  };
+
+  if (basketCodeLang) basketCodeLang.textContent = titles[activeBasketTab] || activeBasketTab.toUpperCase();
+  if (basketModalFormatBadge) basketModalFormatBadge.textContent = badges[activeBasketTab] || activeBasketTab.toUpperCase();
+
+  const code = getBasketBundleContent(activeBasketTab);
+  if (basketCodeContent) {
+    basketCodeContent.textContent = code;
+  }
+}
+
+if (basketExportBtn) {
+  basketExportBtn.addEventListener('click', openBasketModal);
+}
+
+if (basketZipBtn) {
+  basketZipBtn.addEventListener('click', downloadBasketZip);
+}
+
+if (basketClearBtn) {
+  basketClearBtn.addEventListener('click', () => {
+    if (confirm('Clear all icons from Project Basket?')) {
+      clearBasket();
+    }
+  });
+}
+
+if (addSelectedToBasketBtn) {
+  addSelectedToBasketBtn.addEventListener('click', addSelectedToBasket);
+}
+
+if (basketModalCloseBtn) {
+  basketModalCloseBtn.addEventListener('click', closeBasketModal);
+}
+
+if (basketModalOverlay) {
+  basketModalOverlay.addEventListener('click', (e) => {
+    if (e.target === basketModalOverlay) closeBasketModal();
+  });
+}
+
+basketModalTabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    activeBasketTab = tab.dataset.tab;
+    updateBasketModalUI();
+  });
+});
+
+if (basketCopyCodeBtn) {
+  basketCopyCodeBtn.addEventListener('click', () => {
+    const code = getBasketBundleContent(activeBasketTab);
+    if (!code) return;
+    navigator.clipboard.writeText(code);
+    const span = basketCopyCodeBtn.querySelector('span');
+    if (span) {
+      const old = span.textContent;
+      span.textContent = 'Copied!';
+      setTimeout(() => { span.textContent = old; }, 1500);
+    }
+    showToast(`Copied ${activeBasketTab.toUpperCase()} bundle to clipboard!`, 'success');
+  });
+}
+
+if (basketDownloadFileBtn) {
+  basketDownloadFileBtn.addEventListener('click', () => {
+    const code = getBasketBundleContent(activeBasketTab);
+    if (!code) return;
+    const { filename, mime } = getBasketFileInfo(activeBasketTab);
+    downloadFile(filename, code, mime);
+  });
+}
 
 selectAllBtn.addEventListener('click', () => {
   state.filteredIcons.forEach(i => i.selected = true);
@@ -1032,8 +1577,10 @@ downloadZipBtn.addEventListener('click', async () => {
 
 // Initial startup
 document.addEventListener('DOMContentLoaded', () => {
+  loadBasketFromStorage();
   fetchCollection('circle-flags');
 });
 if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  loadBasketFromStorage();
   fetchCollection('circle-flags');
 }
